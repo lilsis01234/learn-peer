@@ -1,41 +1,64 @@
-// import logo from './logo.svg';
-import Peer from 'peerjs'
+import { useEffect, useRef, useState } from 'react';
+import Peer from 'peerjs';
 import './App.css';
-import React, {useEffect, useState} from 'react'
-import { useRef } from 'react';
 
 function App() {
+  const [peerId, setPeerId] = useState('');
+  const [remotePeerIdValue, setRemotePeerIdValue] = useState('');
   const remoteVideoRef = useRef(null);
-  const[peerId, setPeerId] = useState(null);
+  const currentUserVideoRef = useRef(null);
+  const peerInstance = useRef(null);
 
-  useEffect(()=>{
+  useEffect(() => {
     const peer = new Peer();
-    peer.on('open', function (id){
-      console.log('ty le id'+ id)
+
+    peer.on('open', (id) => {
       setPeerId(id)
+    });
+
+    peer.on('call', (call) => {
+      var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+      getUserMedia({ video: true, audio: true }, (mediaStream) => {
+        currentUserVideoRef.current.srcObject = mediaStream;
+        currentUserVideoRef.current.play();
+        call.answer(mediaStream)
+        call.on('stream', function(remoteStream) {
+          remoteVideoRef.current.srcObject = remoteStream
+          remoteVideoRef.current.play();
+        });
+      });
     })
-  },[])
 
-  const Call = (idEnRemote) =>{
-    const peer = new Peer();
+    peerInstance.current = peer;
+  }, [])
+
+  const call = (remotePeerId) => {
     var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-     getUserMedia ({audio:true, video:true}, function (mediaStream){
-      const call = peer.call(idEnRemote, mediaStream)
-      call.on('stream', function(remoteIdStream){
 
-      })
-    }
-    )
+    getUserMedia({ video: true, audio: true }, (mediaStream) => {
+
+      currentUserVideoRef.current.srcObject = mediaStream;
+      currentUserVideoRef.current.play();
+
+      const call = peerInstance.current.call(remotePeerId, mediaStream)
+
+      call.on('stream', (remoteStream) => {
+        remoteVideoRef.current.srcObject = remoteStream
+        remoteVideoRef.current.play();
+      });
+    });
   }
 
   return (
     <div className="App">
-      <h1>Ton peer id est {peerId}</h1>
+      <h1>Current user id is {peerId}</h1>
+      <input type="text" value={remotePeerIdValue} onChange={e => setRemotePeerIdValue(e.target.value)} />
+      <button onClick={() => call(remotePeerIdValue)}>Call</button>
       <div>
-        <video/>
+        <video ref={currentUserVideoRef} />
       </div>
       <div>
-        <video ref={remoteVideoRef}/>
+        <video ref={remoteVideoRef} />
       </div>
     </div>
   );
