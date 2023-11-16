@@ -13,46 +13,50 @@ function App() {
     const peer = new Peer();
 
     peer.on('open', (id) => {
-      setPeerId(id)
+      setPeerId(id);
     });
 
     peer.on('call', (call) => {
-      var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-      getUserMedia({ video: true, audio: true }, (mediaStream) => {
-        currentUserVideoRef.current.srcObject = mediaStream;
-        currentUserVideoRef.current.play();
-        call.answer(mediaStream)
-        call.on('stream', function(remoteStream) {
-          remoteVideoRef.current.srcObject = remoteStream
-          remoteVideoRef.current.play();
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then((mediaStream) => {
+          currentUserVideoRef.current.srcObject = mediaStream;
+          currentUserVideoRef.current.play();
+          call.answer(mediaStream);
+          call.on('stream', function (remoteStream) {
+            remoteVideoRef.current.srcObject = remoteStream;
+            remoteVideoRef.current.play();
+          });
+        })
+        .catch((error) => {
+          console.error('Error accessing media devices:', error);
         });
-      });
-    })
+    });
 
     peerInstance.current = peer;
-  }, [])
+  }, []);
 
   const call = (remotePeerId) => {
-    var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then((mediaStream) => {
+        currentUserVideoRef.current.srcObject = mediaStream;
+        currentUserVideoRef.current.play();
 
-    getUserMedia({ video: true, audio: true }, (mediaStream) => {
+        const call = peerInstance.current.call(remotePeerId, mediaStream);
 
-      currentUserVideoRef.current.srcObject = mediaStream;
-      currentUserVideoRef.current.play();
-
-      const call = peerInstance.current.call(remotePeerId, mediaStream)
-
-      call.on('stream', (remoteStream) => {
-        remoteVideoRef.current.srcObject = remoteStream
-        remoteVideoRef.current.play();
+        call.on('stream', (remoteStream) => {
+          remoteVideoRef.current.srcObject = remoteStream;
+          remoteVideoRef.current.play();
+        });
+      })
+      .catch((error) => {
+        console.error('Error accessing media devices:', error);
       });
-    });
-  }
+  };
 
   return (
     <div className="App">
       <h1>Current user id is {peerId}</h1>
-      <input type="text" value={remotePeerIdValue} onChange={e => setRemotePeerIdValue(e.target.value)} />
+      <input type="text" value={remotePeerIdValue} onChange={(e) => setRemotePeerIdValue(e.target.value)} />
       <button onClick={() => call(remotePeerIdValue)}>Call</button>
       <div>
         <video ref={currentUserVideoRef} />
