@@ -17,26 +17,30 @@ function App() {
     });
 
     peer.on('call', (call) => {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then((mediaStream) => {
-          currentUserVideoRef.current.srcObject = mediaStream;
-          currentUserVideoRef.current.play();
-          call.answer(mediaStream);
-          call.on('stream', function (remoteStream) {
-            remoteVideoRef.current.srcObject = remoteStream;
-            remoteVideoRef.current.play();
-          });
-        })
-        .catch((error) => {
-          console.error('Error accessing media devices:', error);
-        });
+      handleIncomingCall(call);
     });
 
     peerInstance.current = peer;
   }, []);
 
+  const handleIncomingCall = (call) => {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((mediaStream) => {
+        currentUserVideoRef.current.srcObject = mediaStream;
+        currentUserVideoRef.current.play();
+        call.answer(mediaStream);
+        call.on('stream', function (remoteStream) {
+          remoteVideoRef.current.srcObject = remoteStream;
+          remoteVideoRef.current.play();
+        });
+      })
+      .catch((error) => {
+        console.error('Error accessing audio devices:', error);
+      });
+  };
+
   const call = (remotePeerId) => {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    navigator.mediaDevices.getUserMedia({ audio: true })
       .then((mediaStream) => {
         currentUserVideoRef.current.srcObject = mediaStream;
         currentUserVideoRef.current.play();
@@ -49,7 +53,7 @@ function App() {
         });
       })
       .catch((error) => {
-        console.error('Error accessing media devices:', error);
+        console.error('Error accessing audio devices:', error);
       });
   };
 
